@@ -1,4 +1,4 @@
-const CACHE = "shankmaster-v1";
+const CACHE = "shankmaster-v2";
 const SHELL = [
   "./", "./index.html", "./css/style.css",
   "./js/supabase-config.js", "./js/supabase-adapter.js",
@@ -17,9 +17,17 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = e.request.url;
-  // Never cache Supabase API traffic; always hit the network for data.
+  // Never touch Supabase API traffic; always hit the network for data.
   if (url.includes("supabase.co") || url.includes("/rest/v1/")) return;
+  // Network-first for the app shell: always try the network so code/config
+  // updates reach the user on next load, and fall back to cache when offline.
   e.respondWith(
-    caches.match(e.request).then((hit) => hit || fetch(e.request))
+    fetch(e.request)
+      .then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+        return resp;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
