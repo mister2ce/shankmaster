@@ -1,0 +1,4 @@
+# Personal data must NEVER go to the public repo.
+data-export/
+supabase/02_seed.sql
+.DS_Store

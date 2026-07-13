@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Shankmaster - Seguimiento de Apuestas de Golf</title>
+    <!-- PWA / install on phone -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0b3d2e">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Shankmaster">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <img src="images/shankmaster-logo.png" alt="Shankmaster" class="header-logo">
+                <p class="subtitle">DONDE CADA SHANK CUESTA</p>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="jugadores">
+                <i class="fas fa-users"></i> Jugadores
+            </button>
+            <button class="nav-tab" data-tab="partidas">
+                <i class="fas fa-clipboard-list"></i> Partidas
+            </button>
+            <button class="nav-tab" data-tab="analitica">
+                <i class="fas fa-chart-bar"></i> Analítica
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Jugadores Tab -->
+            <section id="jugadores-tab" class="tab-content active">
+                <div class="section-header">
+                    <h2><i class="fas fa-users"></i> Jugadores</h2>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <div class="view-toggle">
+                            <button id="view-grid" class="active">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button id="view-list">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-primary" id="btn-nuevo-jugador">
+                            <i class="fas fa-plus"></i> Nuevo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Buscador -->
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="search-input" id="search-jugadores" placeholder="Buscar jugador...">
+                </div>
+
+                <!-- Filtros y Orden -->
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <label for="sort-jugadores"><i class="fas fa-sort"></i> Ordenar por:</label>
+                        <select id="sort-jugadores" class="filter-select">
+                            <option value="nombre-asc">Nombre (A-Z)</option>
+                            <option value="nombre-desc">Nombre (Z-A)</option>
+                            <option value="balance-desc">Balance (Mayor a Menor)</option>
+                            <option value="balance-asc">Balance (Menor a Mayor)</option>
+                            <option value="sliding-desc">Sliding (Mayor a Menor)</option>
+                            <option value="sliding-asc">Sliding (Menor a Mayor)</option>
+                            <option value="partidas-desc">Más Partidas</option>
+                            <option value="partidas-asc">Menos Partidas</option>
+                            <option value="ultima-partida">Última Partida</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="filter-estado"><i class="fas fa-filter"></i> Filtrar:</label>
+                        <select id="filter-estado" class="filter-select">
+                            <option value="todos">Todos</option>
+                            <option value="ganando">Ganando (Balance +)</option>
+                            <option value="perdiendo">Perdiendo (Balance -)</option>
+                            <option value="con-notas">Con Notas</option>
+                            <option value="sin-notas">Sin Notas</option>
+                            <option value="con-partidas">Con Partidas</option>
+                            <option value="sin-partidas">Sin Partidas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Mensaje de carga inicial -->
+                <div id="carga-inicial-container" style="display: none;">
+                    <div style="background: var(--bg-primary); border: 1px solid var(--gray-200); border-radius: 16px; padding: 24px; margin-bottom: 16px; text-align: center; box-shadow: var(--shadow-md);">
+                        <i class="fas fa-users" style="font-size: 40px; color: var(--primary-color); margin-bottom: 12px;"></i>
+                        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">¿Primera vez?</h3>
+                        <p style="color: var(--text-tertiary); margin-bottom: 20px; font-size: 14px;">Carga los 51 jugadores automáticamente</p>
+                        <button class="btn btn-primary" id="btn-cargar-datos">
+                            <i class="fas fa-download"></i> Cargar 51 Jugadores
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formulario de Jugador -->
+                <div id="form-jugador-container" class="form-container" style="display: none;">
+                    <div class="form-card">
+                        <h3 id="form-jugador-title">Agregar Jugador</h3>
+                        <form id="form-jugador">
+                            <div class="form-group">
+                                <label for="jugador-nombre">Nombre *</label>
+                                <input type="text" id="jugador-nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="jugador-sliding">Sliding Inicial *</label>
+                                <input type="text" id="jugador-sliding" placeholder="ej: +3, -2, 0" required>
+                                <small>Use + si recibes puntos, - si das puntos, 0 si es parejo. El sistema ajustará automáticamente según resultados.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="jugador-notas">Notas</label>
+                                <textarea id="jugador-notas" rows="3"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="btn-cancelar-jugador">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Lista de Jugadores -->
+                <div class="jugadores-grid" id="jugadores-grid">
+                    <!-- Los jugadores se cargarán aquí dinámicamente -->
+                </div>
+            </section>
+
+            <!-- Partidas Tab -->
+            <section id="partidas-tab" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-clipboard-list"></i> Registro de Partidas</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-secondary btn-small" id="btn-gestionar-campos">
+                            <i class="fas fa-flag-checkered"></i> Gestionar Campos
+                        </button>
+                        <button class="btn btn-primary" id="btn-nueva-partida">
+                            <i class="fas fa-plus"></i> Nueva Partida
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filtros y Sorting -->
+                <div class="filters-container">
+                    <div class="filter-group">
+                        <label><i class="fas fa-filter"></i> Filtrar por:</label>
+                        <select id="filter-jugador">
+                            <option value="">Todos los jugadores</option>
+                        </select>
+                        <select id="filter-campo">
+                            <option value="">Todos los campos</option>
+                        </select>
+                        <select id="filter-resultado">
+                            <option value="">Todos los resultados</option>
+                            <option value="Ganado">Ganado</option>
+                            <option value="Perdido">Perdido</option>
+                        </select>
+                        <input type="date" id="filter-fecha-desde" placeholder="Desde">
+                        <input type="date" id="filter-fecha-hasta" placeholder="Hasta">
+                        <button class="btn btn-secondary btn-small" id="btn-limpiar-filtros">
+                            <i class="fas fa-times"></i> Limpiar
+                        </button>
+                    </div>
+                    <div class="filter-group" style="margin-top: 8px;">
+                        <label><i class="fas fa-sort"></i> Ordenar por:</label>
+                        <select id="sort-partidas">
+                            <option value="-fecha">Fecha (Más reciente)</option>
+                            <option value="fecha">Fecha (Más antigua)</option>
+                            <option value="jugador">Jugador (A-Z)</option>
+                            <option value="-jugador">Jugador (Z-A)</option>
+                            <option value="campo">Campo (A-Z)</option>
+                            <option value="-campo">Campo (Z-A)</option>
+                            <option value="-importe">Importe (Mayor a Menor)</option>
+                            <option value="importe">Importe (Menor a Mayor)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Formulario de Partida -->
+                <div id="form-partida-container" class="form-container" style="display: none;">
+                    <div class="form-card">
+                        <h3 id="form-partida-title">Registrar Partida</h3>
+                        <form id="form-partida">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="partida-fecha">Fecha *</label>
+                                    <input type="date" id="partida-fecha" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="partida-jugador">Contrincante *</label>
+                                    <select id="partida-jugador" required>
+                                        <option value="">Seleccione un jugador</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="partida-campo">Campo *</label>
+                                <select id="partida-campo-select">
+                                    <option value="">Seleccione un campo</option>
+                                    <option value="__nuevo__">+ Agregar nuevo campo...</option>
+                                </select>
+                                <input type="text" id="partida-campo-nuevo" style="display: none; margin-top: 8px;" placeholder="Nombre del nuevo campo">
+                            </div>
+
+                            <!-- Tarjeta de Sliding Actual -->
+                            <div class="sliding-actual-card" id="sliding-actual-card" style="display: none;">
+                                <div class="sliding-card-header">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Sliding Actual del Contrincante</span>
+                                </div>
+                                <div class="sliding-card-body">
+                                    <div id="sliding-info-display" class="sliding-display">
+                                        <span class="sliding-badge">Seleccione un jugador</span>
+                                    </div>
+                                    <p class="sliding-card-note">
+                                        <i class="fas fa-info-circle"></i>
+                                        El sliding se ajustará automáticamente después de esta partida
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="scores-section">
+                                <h4>Marcador</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="partida-score-mio">Mi Score *</label>
+                                        <input type="number" id="partida-score-mio" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="partida-score-suyo">Score Contrincante *</label>
+                                        <input type="number" id="partida-score-suyo" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="scores-section">
+                                <h4>Resultado</h4>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="partida-resultado">Resultado *</label>
+                                        <select id="partida-resultado" required>
+                                            <option value="">Seleccione resultado</option>
+                                            <option value="Ganado">Ganado</option>
+                                            <option value="Perdido">Perdido</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="partida-importe">Importe $ *</label>
+                                        <input type="number" id="partida-importe" step="0.01" required>
+                                    </div>
+                                </div>
+                                <div class="sliding-adjustment-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span id="sliding-adjustment-text">El sliding se ajustará automáticamente según el resultado</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="partida-notas">Notas</label>
+                                <textarea id="partida-notas" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Guardar Partida
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="btn-cancelar-partida">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Lista de Partidas -->
+                <div class="partidas-table-container">
+                    <table class="partidas-table" id="partidas-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Campo</th>
+                                <th>Contrincante</th>
+                                <th>Sliding</th>
+                                <th>Marcador</th>
+                                <th>Resultado</th>
+                                <th>Importe $</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partidas-tbody">
+                            <!-- Las partidas se cargarán aquí dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Analítica Tab -->
+            <section id="analitica-tab" class="tab-content">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Analítica y Estadísticas</h2>
+                    <button class="btn btn-secondary" id="btn-volver-general" style="display: none;">
+                        <i class="fas fa-arrow-left"></i> Volver a General
+                    </button>
+                </div>
+
+                <!-- Vista General -->
+                <div id="analitica-general">
+                    <!-- Filtros de Analítica -->
+                    <div class="filters-container">
+                        <div class="filter-group">
+                            <label><i class="fas fa-filter"></i> Filtrar análisis:</label>
+                            <select id="analitica-filter-jugador">
+                                <option value="">Todos los jugadores</option>
+                            </select>
+                            <select id="analitica-filter-campo">
+                                <option value="">Todos los campos</option>
+                            </select>
+                            <input type="date" id="analitica-filter-fecha-desde" placeholder="Desde">
+                            <input type="date" id="analitica-filter-fecha-hasta" placeholder="Hasta">
+                            <button class="btn btn-secondary btn-small" id="btn-limpiar-filtros-analitica">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Estadísticas Generales -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon green">
+                                <i class="fas fa-trophy"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="stat-ganadas">0</h3>
+                                <p>Partidas Ganadas</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon red">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="stat-perdidas">0</h3>
+                                <p>Partidas Perdidas</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon blue">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="stat-balance">$0</h3>
+                                <p>Balance Total</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon orange">
+                                <i class="fas fa-percentage"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3 id="stat-winrate">0%</h3>
+                                <p>Tasa de Victoria</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficas -->
+                    <div class="charts-section">
+                        <div class="chart-card">
+                            <h3><i class="fas fa-chart-line"></i> Balance en el Tiempo</h3>
+                            <div style="height: 300px; position: relative;">
+                                <canvas id="balanceChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-row">
+                            <div class="chart-card">
+                                <h3><i class="fas fa-chart-pie"></i> Distribución Resultados</h3>
+                                <div style="height: 250px; position: relative;">
+                                    <canvas id="resultadosChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-card">
+                                <h3><i class="fas fa-chart-bar"></i> Top 5 Jugadores</h3>
+                                <div style="height: 250px; position: relative;">
+                                    <canvas id="top5Chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Ranking -->
+                    <div class="ranking-section">
+                        <h3><i class="fas fa-ranking-star"></i> Ranking de Jugadores - Click para ver detalle</h3>
+                        <div class="table-responsive">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th>Posición</th>
+                                        <th>Jugador</th>
+                                        <th>Sliding</th>
+                                        <th>Partidas</th>
+                                        <th>Ganadas</th>
+                                        <th>Perdidas</th>
+                                        <th>Win Rate</th>
+                                        <th>Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ranking-tbody">
+                                    <!-- El ranking se cargará aquí dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista Detalle por Jugador -->
+                <div id="analitica-jugador" style="display: none;">
+                    <div class="jugador-detail-header">
+                        <div class="jugador-detail-info">
+                            <h2 id="detalle-jugador-nombre">Jugador</h2>
+                        </div>
+                    </div>
+
+                    <!-- Tarjetas de Sliding -->
+                    <div class="sliding-cards-container">
+                        <div class="sliding-info-card" id="sliding-actual-info-card">
+                            <div class="sliding-info-header">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Sliding Actual</span>
+                            </div>
+                            <div class="sliding-info-value" id="detalle-sliding-actual-valor">0</div>
+                        </div>
+                        <div class="sliding-info-card sliding-inicial">
+                            <div class="sliding-info-header">
+                                <i class="fas fa-flag"></i>
+                                <span>Sliding Inicial</span>
+                            </div>
+                            <div class="sliding-info-value" id="detalle-sliding-inicial-valor">0</div>
+                        </div>
+                    </div>
+
+                    <!-- Notas del jugador -->
+                    <div id="detalle-notas-section" style="display: none; background: var(--warning-color); background: rgba(255, 149, 0, 0.1); border-left: 4px solid var(--warning-color); padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <i class="fas fa-sticky-note" style="color: var(--warning-color); font-size: 18px; margin-top: 2px;"></i>
+                            <div style="flex: 1;">
+                                <strong style="display: block; margin-bottom: 4px; color: var(--text-primary);">Notas:</strong>
+                                <p id="detalle-notas-text" style="margin: 0; color: var(--text-secondary); line-height: 1.5;"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats compactas del jugador -->
+                    <div class="stats-compactas">
+                        <div class="stat-compacta">
+                            <div class="stat-label">Partidas</div>
+                            <div class="stat-valor" id="detalle-total-partidas">0</div>
+                        </div>
+                        <div class="stat-compacta success">
+                            <div class="stat-label">Ganadas</div>
+                            <div class="stat-valor" id="detalle-ganadas">0</div>
+                        </div>
+                        <div class="stat-compacta danger">
+                            <div class="stat-label">Perdidas</div>
+                            <div class="stat-valor" id="detalle-perdidas">0</div>
+                        </div>
+                        <div class="stat-compacta">
+                            <div class="stat-label">Win Rate</div>
+                            <div class="stat-valor" id="detalle-winrate">0%</div>
+                        </div>
+                        <div class="stat-compacta success">
+                            <div class="stat-label">Dinero Ganado</div>
+                            <div class="stat-valor" id="detalle-dinero-ganado">$0</div>
+                        </div>
+                        <div class="stat-compacta danger">
+                            <div class="stat-label">Dinero Perdido</div>
+                            <div class="stat-valor" id="detalle-dinero-perdido">$0</div>
+                        </div>
+                        <div class="stat-compacta primary">
+                            <div class="stat-label" id="detalle-balance-texto">Balance Neto</div>
+                            <div class="stat-valor" id="detalle-balance-neto">$0</div>
+                        </div>
+                    </div>
+
+                    <!-- Histórico de partidas -->
+                    <div class="historico-section">
+                        <h3><i class="fas fa-history"></i> Histórico de Partidas</h3>
+                        <div class="table-responsive">
+                            <table class="historico-table">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 100px;">Fecha</th>
+                                        <th style="min-width: 120px;">Campo</th>
+                                        <th style="min-width: 80px;">Sliding</th>
+                                        <th style="min-width: 90px;">Marcador</th>
+                                        <th style="min-width: 100px;">Resultado</th>
+                                        <th style="min-width: 90px;">Importe</th>
+                                        <th style="min-width: 100px;">Nuevo Sliding</th>
+                                        <th style="min-width: 120px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historico-tbody">
+                                    <!-- El histórico se cargará aquí -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Shankmaster &copy; 2025 - Sistema de Sliding Handicap Automático</p>
+        </footer>
+    </div>
+
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-adapter.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/datos-iniciales.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("sw.js").catch(function (e) {
+            console.warn("SW registration failed", e);
+          });
+        });
+      }
+    </script>
+</body>
+</html>
