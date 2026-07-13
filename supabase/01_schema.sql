@@ -49,6 +49,7 @@ create table if not exists partidas (
   score_mio        integer,
   score_suyo       integer,
   resultado        text,
+  carry            boolean default false,   -- empate a los 9: el sliding NO se mueve
   importe          numeric,
   notas            text,
   created_at       timestamptz default now(),

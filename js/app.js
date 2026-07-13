@@ -846,6 +846,7 @@ function mostrarFormularioPartida(partida = null) {
         document.getElementById('partida-score-mio').value = partida.score_mio;
         document.getElementById('partida-score-suyo').value = partida.score_suyo;
         document.getElementById('partida-resultado').value = partida.resultado;
+        document.getElementById('partida-carry').value = partida.carry ? 'si' : 'no';
         document.getElementById('partida-importe').value = partida.importe;
         document.getElementById('partida-notas').value = partida.notas || '';
         
@@ -928,10 +929,14 @@ async function guardarPartida() {
     }
     
     const resultado = document.getElementById('partida-resultado').value;
-    
-    // Calcular nuevo sliding
+
+    // Carry: empate a los 9 hoyos. El dinero se gana/pierde igual, pero el
+    // sliding NO se mueve en un carry.
+    const esCarry = document.getElementById('partida-carry').value === 'si';
+
+    // Calcular nuevo sliding (en un carry se congela: nuevo = anterior)
     const gano = resultado === 'Ganado';
-    const slidingNuevo = ajustarSliding(slidingAnterior, gano);
+    const slidingNuevo = esCarry ? slidingAnterior : ajustarSliding(slidingAnterior, gano);
     
     // CORREGIR BUG FECHA - Usar fecha local sin conversión UTC
     const fechaInput = document.getElementById('partida-fecha').value; // YYYY-MM-DD
@@ -949,6 +954,7 @@ async function guardarPartida() {
         score_mio: parseInt(document.getElementById('partida-score-mio').value),
         score_suyo: parseInt(document.getElementById('partida-score-suyo').value),
         resultado: resultado,
+        carry: esCarry,
         importe: parseFloat(document.getElementById('partida-importe').value),
         notas: document.getElementById('partida-notas').value.trim()
     };
@@ -974,22 +980,28 @@ async function guardarPartida() {
             });
             
             if (!response.ok) throw new Error('Error al crear partida');
-            
-            // Actualizar sliding del jugador con error handling
-            console.log(`🎯 Actualizando sliding: ${slidingAnterior} → ${slidingNuevo} para jugador ${jugadorId}`);
-            const updateResponse = await fetch(`tables/jugadores/${jugadorId}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sliding_actual: slidingNuevo })
-            });
-            
-            if (!updateResponse.ok) {
-                console.error('❌ Error al actualizar sliding del jugador');
-                throw new Error('Error al actualizar sliding del jugador');
+
+            if (esCarry) {
+                // Carry: el sliding no se mueve, no se actualiza el jugador.
+                console.log('🔁 Carry (empate a los 9): sliding sin cambio');
+                mostrarMensaje(`Partida registrada (carry). Sliding sin cambio: ${slidingAnterior}`, 'success');
+            } else {
+                // Actualizar sliding del jugador con error handling
+                console.log(`🎯 Actualizando sliding: ${slidingAnterior} → ${slidingNuevo} para jugador ${jugadorId}`);
+                const updateResponse = await fetch(`tables/jugadores/${jugadorId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sliding_actual: slidingNuevo })
+                });
+
+                if (!updateResponse.ok) {
+                    console.error('❌ Error al actualizar sliding del jugador');
+                    throw new Error('Error al actualizar sliding del jugador');
+                }
+
+                console.log(`✅ Sliding actualizado exitosamente: ${slidingAnterior} → ${slidingNuevo}`);
+                mostrarMensaje(`Partida registrada. Sliding actualizado: ${slidingAnterior} → ${slidingNuevo}`, 'success');
             }
-            
-            console.log(`✅ Sliding actualizado exitosamente: ${slidingAnterior} → ${slidingNuevo}`);
-            mostrarMensaje(`Partida registrada. Sliding actualizado: ${slidingAnterior} → ${slidingNuevo}`, 'success');
         }
         
         // Guardar campo si es nuevo
@@ -1161,6 +1173,7 @@ function renderizarPartidas() {
                     <span class="resultado-badge ${resultadoClass}">
                         ${partida.resultado}
                     </span>
+                    ${partida.carry ? '<span class="sliding-change">🔁 Carry</span>' : ''}
                     ${slidingChange}
                 </td>
                 <td class="${importeClass}">
@@ -2126,7 +2139,7 @@ function mostrarDetallePartida(partidaId) {
 👤 Jugador: ${partida.jugador_nombre}
 📊 Sliding: ${slidingCambio}
 🎯 Marcador: ${partida.score_mio} - ${partida.score_suyo}
-${partida.resultado === 'Ganado' ? '🏆' : '❌'} Resultado: ${partida.resultado}
+${partida.resultado === 'Ganado' ? '🏆' : '❌'} Resultado: ${partida.resultado}${partida.carry ? ' (🔁 Carry - sliding sin cambio)' : ''}
 💰 Importe: $${partida.importe.toFixed(2)}
 ${partida.notas ? `📝 Notas: ${partida.notas}` : ''}
     `.trim();
@@ -2163,7 +2176,7 @@ function mostrarDetallePartidaPopup(partida) {
    Tu Score: ${partida.score_mio}
    Score Contrincante: ${partida.score_suyo}
 
-${partida.resultado === 'Ganado' ? '🏆' : '❌'} Resultado: ${partida.resultado}
+${partida.resultado === 'Ganado' ? '🏆' : '❌'} Resultado: ${partida.resultado}${partida.carry ? ' (🔁 Carry - sliding sin cambio)' : ''}
 💰 Importe: ${prefix}$${Math.abs(cambio).toFixed(2)}
 
 ${partida.sliding_nuevo ? `📈 Nuevo Sliding: ${partida.sliding_nuevo}` : ''}
