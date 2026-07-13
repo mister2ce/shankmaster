@@ -1,7 +1,6 @@
 // Shankmaster -> Supabase connection.
-// Fill these two values in after creating your free Supabase project.
-// (Settings -> API. The "anon public" key is DESIGNED to be public, safe to commit.)
+// The publishable/anon key is DESIGNED to be public; safe to commit.
 window.SHANKMASTER_SUPABASE = {
-  url:     "REPLACE_WITH_SUPABASE_URL",       // e.g. https://abcd1234.supabase.co
-  anonKey: "REPLACE_WITH_SUPABASE_ANON_KEY"    // the long "anon public" key
+  url:     "https://rjaxaxvrpjqlnkzspoqq.supabase.co",
+  anonKey: "sb_publishable_Z8wdpX26zwqZl-2kMAbF_A_vWlQkfur"
 };
