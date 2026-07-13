@@ -756,14 +756,15 @@ function actualizarDatalistCampos() {
     const select = document.getElementById('partida-campo-select');
     if (!select) return;
     
-    // Ordenar campos alfabéticamente
-    const camposOrdenados = [...state.campos].sort((a, b) => 
-        a.nombre.localeCompare(b.nombre, 'es')
-    );
-    
+    // Unir campos registrados (tabla campos) con campos ya jugados (partidas),
+    // para no perder campos que se jugaron pero nunca quedaron en la tabla.
+    const nombres = new Set(state.campos.map(c => c.nombre));
+    state.partidas.forEach(p => { if (p.campo) nombres.add(p.campo); });
+    const camposOrdenados = [...nombres].sort((a, b) => a.localeCompare(b, 'es'));
+
     select.innerHTML = '<option value="">Seleccione un campo</option>' +
-        camposOrdenados.map(campo => 
-            `<option value="${campo.nombre}">${campo.nombre}</option>`
+        camposOrdenados.map(nombre =>
+            `<option value="${nombre}">${nombre}</option>`
         ).join('') +
         '<option value="__nuevo__">+ Agregar nuevo campo...</option>';
 }
@@ -863,6 +864,10 @@ function mostrarFormularioPartida(partida = null) {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('partida-fecha').value = today;
         campoNuevo.style.display = 'none';
+        // Campo por defecto: Lomas Country Club (si existe en la lista)
+        if ([...campoSelect.options].some(o => o.value === 'Lomas Country Club')) {
+            campoSelect.value = 'Lomas Country Club';
+        }
         document.getElementById('sliding-info-display').innerHTML = `
             <span class="sliding-badge">Seleccione un jugador</span>
         `;
