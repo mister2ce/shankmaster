@@ -1,4 +1,4 @@
-const CACHE = "shankmaster-v3";
+const CACHE = "shankmaster-v4";
 const SHELL = [
   "./", "./index.html", "./css/style.css",
   "./js/supabase-config.js", "./js/supabase-adapter.js",
@@ -21,8 +21,10 @@ self.addEventListener("fetch", (e) => {
   if (url.includes("supabase.co") || url.includes("/rest/v1/")) return;
   // Network-first for the app shell: always try the network so code/config
   // updates reach the user on next load, and fall back to cache when offline.
+  // cache: "no-cache" makes the phone ask GitHub Pages every time, so a new
+  // version shows on the next open instead of after its 10-minute HTTP cache.
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })
       .then((resp) => {
         const copy = resp.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
