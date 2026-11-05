@@ -1,8 +1,8 @@
-const CACHE = "shankmaster-v2";
+const CACHE = "shankmaster-v3";
 const SHELL = [
   "./", "./index.html", "./css/style.css",
   "./js/supabase-config.js", "./js/supabase-adapter.js",
-  "./js/app.js", "./js/datos-iniciales.js",
+  "./js/app.js", "./js/golf-sync.js", "./js/datos-iniciales.js",
   "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"
 ];
 self.addEventListener("install", (e) => {

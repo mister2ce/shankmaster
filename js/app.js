@@ -27,10 +27,26 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 });
 
+// Fecha de hoy en la Ciudad de México (YYYY-MM-DD). toISOString() da la fecha
+// UTC, que después de las 6 pm ya es mañana.
+function fechaHoyMX() {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
+}
+
+// Marcador para mostrar: los foursomes no llevan score individual. Los
+// foursomes viejos (contra "A Foursome" o "A Foursome y Otros", con
+// 100 - 100) también muestran "-"; el dato guardado no cambia.
+function marcadorPartida(p) {
+    if (p.tipo === 'foursome' || /^A Foursome\b/.test(p.jugador_nombre || '') ||
+        p.score_mio === null || p.score_mio === undefined) {
+        return '-';
+    }
+    return `${p.score_mio} - ${p.score_suyo}`;
+}
+
 async function initializeApp() {
-    // Set fecha actual por defecto
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('partida-fecha').value = today;
+    // Set fecha actual por defecto (hora de México)
+    document.getElementById('partida-fecha').value = fechaHoyMX();
 
     // Cargar datos - skip render on jugadores until partidas are loaded
     await cargarJugadores(true); // Skip rendering
@@ -861,8 +877,7 @@ function mostrarFormularioPartida(partida = null) {
         state.editandoPartidaId = null;
         title.textContent = 'Registrar Partida';
         form.reset();
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('partida-fecha').value = today;
+        document.getElementById('partida-fecha').value = fechaHoyMX();
         campoNuevo.style.display = 'none';
         // Campo por defecto: Lomas Country Club (si existe en la lista)
         if ([...campoSelect.options].some(o => o.value === 'Lomas Country Club')) {
@@ -872,6 +887,8 @@ function mostrarFormularioPartida(partida = null) {
             <span class="sliding-badge">Seleccione un jugador</span>
         `;
     }
+    // Garmin (fecha, campo, mi score) y modo foursome: js/golf-sync.js
+    if (window.golfSync) window.golfSync.alAbrirFormulario(partida);
     
     formContainer.style.display = 'block';
     formContainer.scrollIntoView({ behavior: 'smooth' });
@@ -939,9 +956,17 @@ async function guardarPartida() {
     // sliding NO se mueve en un carry.
     const esCarry = document.getElementById('partida-carry').value === 'si';
 
-    // Calcular nuevo sliding (en un carry se congela: nuevo = anterior)
+    // Foursome: sin score individual y sin ventaja; el sliding no se mueve.
+    const foursome = window.golfSync ? window.golfSync.datosFoursome() : null;
+    if (foursome && foursome.error) {
+        alert(foursome.error);
+        return;
+    }
+    const esFoursome = !!foursome;
+
+    // Calcular nuevo sliding (en un carry o foursome se congela: nuevo = anterior)
     const gano = resultado === 'Ganado';
-    const slidingNuevo = esCarry ? slidingAnterior : ajustarSliding(slidingAnterior, gano);
+    const slidingNuevo = (esCarry || esFoursome) ? slidingAnterior : ajustarSliding(slidingAnterior, gano);
     
     // CORREGIR BUG FECHA - Usar fecha local sin conversión UTC
     const fechaInput = document.getElementById('partida-fecha').value; // YYYY-MM-DD
@@ -956,12 +981,15 @@ async function guardarPartida() {
         sliding_usado: slidingAnterior,
         sliding_anterior: slidingAnterior,
         sliding_nuevo: slidingNuevo,
-        score_mio: parseInt(document.getElementById('partida-score-mio').value),
-        score_suyo: parseInt(document.getElementById('partida-score-suyo').value),
+        score_mio: esFoursome ? null : parseInt(document.getElementById('partida-score-mio').value),
+        score_suyo: esFoursome ? null : parseInt(document.getElementById('partida-score-suyo').value),
         resultado: resultado,
         carry: esCarry,
         importe: parseFloat(document.getElementById('partida-importe').value),
-        notas: document.getElementById('partida-notas').value.trim()
+        notas: esFoursome ? foursome.notas : document.getElementById('partida-notas').value.trim(),
+        tipo: esFoursome ? 'foursome' : 'individual',
+        companero_id: esFoursome ? foursome.companero_id : null,
+        rivales_ids: esFoursome ? foursome.rivales_ids : null
     };
     
     try {
@@ -986,7 +1014,10 @@ async function guardarPartida() {
             
             if (!response.ok) throw new Error('Error al crear partida');
 
-            if (esCarry) {
+            if (esFoursome) {
+                // Foursome: sin ventaja, no se actualiza ningún sliding.
+                mostrarMensaje('Foursome registrado.', 'success');
+            } else if (esCarry) {
                 // Carry: el sliding no se mueve, no se actualiza el jugador.
                 console.log('🔁 Carry (empate a los 9): sliding sin cambio');
                 mostrarMensaje(`Partida registrada (carry). Sliding sin cambio: ${slidingAnterior}`, 'success');
@@ -1173,7 +1204,7 @@ function renderizarPartidas() {
                 <td><i class="fas fa-flag-checkered"></i> ${partida.campo || 'N/A'}</td>
                 <td><strong>${partida.jugador_nombre}</strong></td>
                 <td><span class="sliding-badge ${slidingClass}">${partida.sliding_usado}</span></td>
-                <td>${partida.score_mio} - ${partida.score_suyo}</td>
+                <td>${marcadorPartida(partida)}</td>
                 <td>
                     <span class="resultado-badge ${resultadoClass}">
                         ${partida.resultado}
@@ -2098,7 +2129,7 @@ function renderizarHistorico(partidas) {
                 <td><strong>${fechaStr}</strong></td>
                 <td><i class="fas fa-flag-checkered" style="color: var(--primary-color);"></i> ${partida.campo || 'N/A'}</td>
                 <td><span class="sliding-badge ${slidingClass}">${partida.sliding_usado}</span></td>
-                <td><strong>${partida.score_mio} - ${partida.score_suyo}</strong></td>
+                <td><strong>${marcadorPartida(partida)}</strong></td>
                 <td>
                     <span class="resultado-badge ${resultadoClass}">
                         ${partida.resultado}
@@ -2143,7 +2174,7 @@ function mostrarDetallePartida(partidaId) {
 ⛳ Campo: ${partida.campo || 'N/A'}
 👤 Jugador: ${partida.jugador_nombre}
 📊 Sliding: ${slidingCambio}
-🎯 Marcador: ${partida.score_mio} - ${partida.score_suyo}
+🎯 Marcador: ${marcadorPartida(partida)}
 ${partida.resultado === 'Ganado' ? '🏆' : '❌'} Resultado: ${partida.resultado}${partida.carry ? ' (🔁 Carry - sliding sin cambio)' : ''}
 💰 Importe: $${partida.importe.toFixed(2)}
 ${partida.notas ? `📝 Notas: ${partida.notas}` : ''}
@@ -2178,8 +2209,8 @@ function mostrarDetallePartidaPopup(partida) {
 📊 Sliding Usado: ${partida.sliding_usado}
 
 🎯 MARCADOR
-   Tu Score: ${partida.score_mio}
-   Score Contrincante: ${partida.score_suyo}
+   ${marcadorPartida(partida) === '-' ? 'Foursome, sin score individual' : `Tu Score: ${partida.score_mio}
+   Score Contrincante: ${partida.score_suyo}`}
 
 ${partida.resultado === 'Ganado' ? '🏆' : '❌'} Resultado: ${partida.resultado}${partida.carry ? ' (🔁 Carry - sliding sin cambio)' : ''}
 💰 Importe: ${prefix}$${Math.abs(cambio).toFixed(2)}

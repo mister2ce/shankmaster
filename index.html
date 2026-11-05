@@ -25,7 +25,22 @@
                 <img src="images/shankmaster-logo.png" alt="Shankmaster" class="header-logo">
                 <p class="subtitle">DONDE CADA SHANK CUESTA</p>
             </div>
+            <button type="button" id="btn-sync" class="sync-btn" aria-label="Sincronizar Garmin y GHIN" title="Sincronizar Garmin y GHIN">
+                <i class="fas fa-rotate"></i>
+            </button>
         </header>
+
+        <!-- Sincronización Garmin -> GHIN -> Shankmaster (js/golf-sync.js) -->
+        <div id="sync-panel" class="sync-panel" hidden>
+            <div class="sync-panel-head">
+                <strong id="sync-titulo">Sincronizando</strong>
+                <button type="button" id="sync-cerrar" class="sync-cerrar" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="sync-barra"><div id="sync-barra-fill" class="sync-barra-fill"></div></div>
+            <p id="sync-etapa" class="sync-etapa">Iniciando</p>
+            <p id="sync-mensaje" class="sync-mensaje" hidden></p>
+            <ul id="sync-resultados" class="sync-resultados"></ul>
+        </div>
 
         <!-- Navigation -->
         <nav class="nav-tabs">
@@ -200,12 +215,18 @@
                     <div class="form-card">
                         <h3 id="form-partida-title">Registrar Partida</h3>
                         <form id="form-partida">
+                            <input type="hidden" id="partida-tipo" value="individual">
+                            <div class="tipo-toggle" role="group" aria-label="Tipo de partida">
+                                <button type="button" class="tipo-btn active" data-tipo="individual">Individual</button>
+                                <button type="button" class="tipo-btn" data-tipo="foursome">Foursome</button>
+                            </div>
+                            <div id="ronda-chip" class="ronda-chip" hidden></div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="partida-fecha">Fecha *</label>
                                     <input type="date" id="partida-fecha" required>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group" id="grupo-contrincante">
                                     <label for="partida-jugador">Contrincante *</label>
                                     <select id="partida-jugador" required>
                                         <option value="">Seleccione un jugador</option>
@@ -239,7 +260,25 @@
                                 </div>
                             </div>
 
-                            <div class="scores-section">
+                            <div class="foursome-section" id="foursome-section" hidden>
+                                <h4>Foursome</h4>
+                                <div class="form-group">
+                                    <label for="foursome-companero">Mi compañero *</label>
+                                    <select id="foursome-companero"></select>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="foursome-rival1">Rival 1 *</label>
+                                        <select id="foursome-rival1"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="foursome-rival2">Rival 2 *</label>
+                                        <select id="foursome-rival2"></select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="scores-section" id="scores-section">
                                 <h4>Marcador</h4>
                                 <div class="form-row">
                                     <div class="form-group">
@@ -546,6 +585,7 @@
     <script src="js/supabase-config.js"></script>
     <script src="js/supabase-adapter.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/golf-sync.js"></script>
     <script src="js/datos-iniciales.js"></script>
     <script>
       if ("serviceWorker" in navigator) {
