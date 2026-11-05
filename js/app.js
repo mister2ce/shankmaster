@@ -93,6 +93,8 @@ function switchTab(tabName) {
         cargarPartidas();
     } else if (tabName === 'analitica') {
         mostrarAnaliticaGeneral();
+    } else if (tabName === 'stats' && window.misStats) {
+        window.misStats.mostrar();
     }
 }
 
@@ -863,7 +865,7 @@ function mostrarFormularioPartida(partida = null) {
         document.getElementById('partida-score-mio').value = partida.score_mio;
         document.getElementById('partida-score-suyo').value = partida.score_suyo;
         document.getElementById('partida-resultado').value = partida.resultado;
-        document.getElementById('partida-carry').value = partida.carry ? 'si' : 'no';
+        document.getElementById('partida-carry').checked = !!partida.carry;
         document.getElementById('partida-importe').value = partida.importe;
         document.getElementById('partida-notas').value = partida.notas || '';
         
@@ -954,7 +956,8 @@ async function guardarPartida() {
 
     // Carry: empate a los 9 hoyos. El dinero se gana/pierde igual, pero el
     // sliding NO se mueve en un carry.
-    const esCarry = document.getElementById('partida-carry').value === 'si';
+    // "No cambia / Carry": el sliding se queda igual, gane o pierda (su regla).
+    const esCarry = document.getElementById('partida-carry').checked;
 
     // Foursome: sin score individual y sin ventaja; el sliding no se mueve.
     const foursome = window.golfSync ? window.golfSync.datosFoursome() : null;
@@ -1934,97 +1937,8 @@ function renderizarTop5Chart(partidas = null) {
 }
 
 function renderizarRanking(partidas = null) {
-    const tbody = document.getElementById('ranking-tbody');
-    
-    const partidasData = partidas || state.partidas;
-    
-    // Calcular estadísticas por jugador
-    const jugadoresStats = {};
-    
-    partidasData.forEach(partida => {
-        const jugadorId = partida.jugador_id;
-        
-        if (!jugadoresStats[jugadorId]) {
-            jugadoresStats[jugadorId] = {
-                nombre: partida.jugador_nombre,
-                jugador_id: jugadorId,
-                partidas: 0,
-                ganadas: 0,
-                perdidas: 0,
-                balance: 0,
-                dineroGanado: 0,
-                dineroPerdido: 0,
-                sliding: ''
-            };
-            
-            // Buscar sliding actual
-            const jugador = state.jugadores.find(j => j.id === jugadorId);
-            if (jugador) {
-                jugadoresStats[jugadorId].sliding = jugador.sliding_actual || jugador.sliding_inicial;
-            }
-        }
-        
-        jugadoresStats[jugadorId].partidas++;
-        
-        const importe = parseFloat(partida.importe) || 0;
-        if (partida.resultado === 'Ganado') {
-            jugadoresStats[jugadorId].ganadas++;
-            jugadoresStats[jugadorId].balance += importe;
-            jugadoresStats[jugadorId].dineroGanado += importe;
-        } else {
-            jugadoresStats[jugadorId].perdidas++;
-            jugadoresStats[jugadorId].balance -= importe;
-            jugadoresStats[jugadorId].dineroPerdido += importe;
-        }
-    });
-    
-    // Convertir a array y ordenar por balance
-    const rankingArray = Object.values(jugadoresStats)
-        .sort((a, b) => b.balance - a.balance);
-    
-    if (rankingArray.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" style="text-align: center; padding: 40px;">
-                    <div class="empty-state">
-                        <i class="fas fa-chart-bar"></i>
-                        <h3>No hay datos para mostrar</h3>
-                        <p>Registra partidas para ver estadísticas</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = rankingArray.map((jugador, index) => {
-        const posicion = index + 1;
-        const posicionClass = posicion === 1 ? 'top1' : posicion === 2 ? 'top2' : posicion === 3 ? 'top3' : '';
-        const winRate = jugador.partidas > 0 ? ((jugador.ganadas / jugador.partidas) * 100).toFixed(1) : 0;
-        const balanceClass = jugador.balance >= 0 ? 'importe-positivo' : 'importe-negativo';
-        const slidingClass = getSlidingClass(jugador.sliding);
-        
-        return `
-            <tr onclick="mostrarDetalleJugador('${jugador.jugador_id}')" style="cursor: pointer;">
-                <td>
-                    <span class="ranking-position ${posicionClass}">${posicion}</span>
-                </td>
-                <td><strong>${jugador.nombre}</strong></td>
-                <td><span class="sliding-badge ${slidingClass}">${jugador.sliding}</span></td>
-                <td>${jugador.partidas}</td>
-                <td>${jugador.ganadas}</td>
-                <td>${jugador.perdidas}</td>
-                <td>${winRate}%</td>
-                <td class="${balanceClass}">
-                    <strong>$${jugador.balance.toFixed(2)}</strong>
-                    <div style="font-size: 0.75rem; color: #666; margin-top: 3px;">
-                        <span style="color: #28a745;">+$${jugador.dineroGanado.toFixed(2)}</span> / 
-                        <span style="color: #dc3545;">-$${jugador.dineroPerdido.toFixed(2)}</span>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
+    // Tablas ordenables de oponentes, compañeros y parejas: js/tablas.js
+    if (window.tablas) window.tablas.renderAnalitica(partidas || state.partidas);
 }
 
 function mostrarDetalleJugador(jugadorId) {

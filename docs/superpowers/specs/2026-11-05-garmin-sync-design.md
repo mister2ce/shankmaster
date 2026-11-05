@@ -71,3 +71,22 @@ tracking bets and scores with other people, so correctness beats speed.
 
 - The UX changes he has queued.
 - A "Mis rondas" screen.
+
+## Round 2 (same day, his rulings)
+
+- Sliding override: one checkbox "No cambia / Carry" replaces the carry
+  dropdown; checked = the sliding stays, whatever the result. No dropdown.
+- Analítica: "Contra quién juego" table, one row per opponent, every column
+  (partidas, ganadas, perdidas, %, balance, ganado, perdido, $ por partida,
+  sliding, cuánto se movió, última, primera, mi score prom., su score prom.),
+  sortable both ways by tapping a header, sideways scroll on the phone with
+  the name pinned. Opens sorted by partidas.
+- Foursome tables: compañeros and parejas rivales. The 80 old foursome bets
+  got companero_id / rivales_ids from their notes after he confirmed the
+  nickname list (only those two fields changed).
+- Mis Stats tab from all Garmin rounds (golf.py backfill loaded 168 older
+  rounds, back to Nov 2024): summary, trend, birdies / pars / bogeys /
+  doubles / triples or worse, fairways, GIR, putts, 3-putts, par 3/4/5, front
+  vs back, hole by hole, money vs score.
+- golf.py: Garmin ignores the `start` offset; the round list now grows the
+  page size instead (the old loop would have spun forever past 50 rounds).

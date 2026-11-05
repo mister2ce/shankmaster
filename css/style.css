@@ -1779,3 +1779,36 @@ body {
     .header { padding-top: calc(20px + env(safe-area-inset-top, 0px)); }
     .sync-btn { top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; }
 }
+
+/* ==================== TABLAS ORDENABLES + MIS STATS (js/tablas.js, js/mis-stats.js) ==================== */
+.tabla-ayuda { color: var(--text-secondary); font-size: 0.85rem; margin: 6px 0 10px; }
+.tabla-sub { margin-top: 28px; }
+.tabla-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border-color); border-radius: 10px; }
+.tabla-ordenable { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 0.88rem; }
+.tabla-ordenable th, .tabla-ordenable td { padding: 9px 12px; white-space: nowrap; text-align: right; border-bottom: 1px solid var(--border-color); }
+.tabla-ordenable th { color: var(--text-secondary); font-weight: 600; cursor: pointer; user-select: none; background: var(--bg-secondary); position: sticky; top: 0; }
+.tabla-ordenable th.fija, .tabla-ordenable td.fija { position: sticky; left: 0; text-align: left; background: var(--bg-secondary); z-index: 1; }
+.tabla-ordenable th.fija { z-index: 2; }
+.tabla-ordenable td.fija { font-weight: 600; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; }
+.tabla-ordenable tbody tr:active td { background: var(--bg-tertiary); }
+.tabla-ordenable td { background: var(--bg-primary); }
+
+.stats-seccion { margin: 22px 0; }
+.stats-seccion h3 { margin: 0 0 10px; font-size: 1.05rem; }
+.stats-mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.stat-mini { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; }
+.stat-mini-valor { font-size: 1.5rem; font-weight: 700; color: var(--accent-color); }
+.stat-mini-label { font-size: 0.82rem; color: var(--text-primary); margin-top: 2px; }
+.stat-mini-sub { font-size: 0.75rem; color: var(--text-secondary); margin-top: 3px; }
+.stats-chart { position: relative; height: 260px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 8px; }
+
+.check-label { display: flex; align-items: center; gap: 10px; font-weight: 600; cursor: pointer; }
+.check-label input { width: 22px; height: 22px; accent-color: var(--accent-color); }
+.check-help { color: var(--text-secondary); font-size: 0.8rem; }
+
+@media (max-width: 768px) {
+    .nav-tabs { gap: 4px; padding: 8px; }
+    .nav-tab { padding: 10px 4px; font-size: 13px; }
+    .nav-tab i { margin-right: 0; display: block; margin-bottom: 4px; }
+    .stats-mini-grid { grid-template-columns: repeat(2, 1fr); }
+}
