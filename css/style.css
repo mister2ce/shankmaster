@@ -1769,6 +1769,13 @@ body {
 
 .foursome-section { margin-bottom: 16px; }
 
+/* El celular dibuja la app debajo de la barra de estado (hora, batería):
+   bajar el encabezado y el botón por debajo de ella. env() vale 0 en la
+   computadora, así que allá no cambia nada. */
+.header { padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
+.sync-btn { top: calc(16px + env(safe-area-inset-top, 0px)); }
+
 @media (max-width: 768px) {
-    .sync-btn { top: 12px; right: 12px; }
+    .header { padding-top: calc(20px + env(safe-area-inset-top, 0px)); }
+    .sync-btn { top: calc(12px + env(safe-area-inset-top, 0px)); right: 12px; }
 }
